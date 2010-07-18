@@ -19,39 +19,58 @@
 (defclass buffered-input-stream (trivial-gray-streams:fundamental-character-input-stream)
    ((stream :initarg :stream
             :reader buffered-stream
-            :initform (alexandria:required-argument :stream))
+            :initform (alexandria:required-argument :stream)
+            :documentation "Wrapped input stream that is to be buffered")
     (buffer-size :initarg :buffer-size
                  :accessor buffered-input-size
-                 :initform 1024)
+                 :initform 1024
+                 :documentation "Size of the input buffer")
     (buffer-position :accessor buffered-input-position
-                     :initform 0)
-    (buffer :accessor buffered-input-buffer)))
+                     :initform 0
+                     :documentation "Reading position of the wrapped buffer")
+    (buffer :accessor buffered-input-buffer
+            :documentation "Wrapped input buffer"))
+   (:documentation "Base class for buffered input streams."))
 
 (defmethod close ((stream buffered-input-stream) &key abort)
   (close (buffered-stream stream) :abort abort))
 
 (defgeneric flush-buffer (buffered-input-stream)
+  (:documentation "Flush the input buffer")
   (:method ((stream buffered-input-stream))
+    "flush-buffer stream => string
+
+Return unread rest of the wrapped buffer and replenish it."
     (prog1 (subseq (buffered-input-buffer stream) (buffered-input-position stream))
       (fill-buffer stream))))
 
-(defmethod initialize-instance :after ((stream buffered-input-stream)  &rest initargs)
+(defmethod initialize-instance :after ((stream buffered-input-stream) &rest initargs)
+  "initialize-instance :after stream &rest initargs => position
+
+Create the input buffer after initialization and fill it for the first time."
   (declare (ignore initargs))
   (with-accessors ((size buffered-input-size))
       stream
     (setf (buffered-input-buffer stream)
-          (make-array (buffered-input-size stream)
-                      :element-type 'character :adjustable nil :fill-pointer size))
+          (make-array size :element-type 'character :adjustable nil :fill-pointer size))
     (fill-buffer stream)))
 
 (defgeneric fill-buffer (buffered-input-stream)
+  (:documentation "Fill the input buffer")
   (:method ((stream buffered-input-stream))
+    "fill-buffer stream => position
+
+Fill the input buffer by reading from the wrapped stream. Also reset the reading
+position to zero."
     (with-accessors ((buffer buffered-input-buffer))
         stream
       (setf (fill-pointer buffer) (read-sequence buffer (buffered-stream stream))
             (buffered-input-position stream) 0))))
 
 (defmethod trivial-gray-streams:stream-read-char :before ((stream buffered-input-stream))
+  "trivial-gray-streams:stream-read-char :before stream => position
+
+If reading beyond the internal buffer, replenish it."
   (with-accessors ((buffer buffered-input-buffer)
                    (position buffered-input-position))
       stream
@@ -59,6 +78,10 @@
       (fill-buffer stream))))
 
 (defmethod trivial-gray-streams:stream-read-char ((stream buffered-input-stream))
+  "trivial-gray-streams:stream-read-char :before stream => char or :eof
+
+Return next character from wrapped input buffer or :EOF if the end of the input
+stream is reached."
   (with-accessors ((buffer buffered-input-buffer)
                    (position buffered-input-position))
       stream
@@ -68,7 +91,15 @@
         (incf position)))))
 
 (defmethod trivial-gray-streams:stream-unread-char ((stream buffered-input-stream) char)
+  "trivial-gray-streams:stream-unread-char stream char => error
+
+Unreading chars is not supported for BUFFERED-INPUT-STREAMS."
   (error "Unreading chars is not supported for buffered-input-streams"))
 
 (defmethod trivial-gray-streams:stream-read-sequence ((stream buffered-input-stream) seq start end &key)
+  "trivial-gray-streams:stream-read-sequence stream seq start end &key => position
+
+Apply READ-SEQUENCE to given arguments and the wrapped input stream. All
+mechanisms of BUFFERED-INPUT-STREAM apply.
+Please see READ-SEQUENCE's documentation."
   (read-sequence seq stream :start start :end end))
