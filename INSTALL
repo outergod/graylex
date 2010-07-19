@@ -15,6 +15,7 @@ Foundation:
 CL libraries (all asdf-install:able):
 - CL-PPCRE             | http://www.cliki.net/CL-PPCRE
 - trivial-gray-streams | http://www.cliki.net/trivial-gray-streams
+- Alexandria           | http://common-lisp.net/project/alexandria/
 - Stefil               | http://common-lisp.net/project/stefil/
 
 Your distribution might provide some of these libraries but the names may
