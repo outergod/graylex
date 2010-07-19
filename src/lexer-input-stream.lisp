@@ -110,16 +110,34 @@ decrease the non-stream position or record the column and row progress."
   (:method ((stream lexer-input-stream) &optional (peek nil))
     "stream-read-token stream &optional peek => (class image)
 
-"
+Scan the lexer's double buffer successively with all its rules. If the double
+buffer is empty, simply return NIL; is no rule matches, signal an
+UNMATCHED-LEXING-SEQUENCE with further details and provide the following
+restarts:
+- flush-buffer: Call the method of the same name and try to scan again
+- skip-characters count: Skip COUNT characters of the reported sequence and try
+  to scan again"
     (declare (ignore peek))
     (with-accessors ((double-buffer lexer-double-buffer))
         stream
       (labels ((scan (chunk rules)
-                 (some #'(lambda (pair)
-                           (let ((match (cl-ppcre:scan-to-strings (concatenate 'string "^" (eval (car pair))) double-buffer)))
-                             (when (and match (> (length match) 0)) ; zero-length matches are not allowed
-                               (if (= (length match) (length chunk))
-                                   (scan (flush-buffer stream) (list pair))
-                                 (list (cdr pair) match)))))
-                       rules)))
-        (apply #'values (scan double-buffer (lexer-rules stream)))))))
+                 (restart-case
+                     (or (some #'(lambda (pair)
+                                   (let ((match (cl-ppcre:scan-to-strings (concatenate 'string "^" (eval (car pair))) double-buffer)))
+                                     (when (and match (> (length match) 0)) ; zero-length matches are not allowed
+                                       (if (= (length match) (length chunk))
+                                           (scan (flush-buffer stream) (list pair))
+                                         (list (cdr pair) match)))))
+                               rules)
+                         (error 'unmatched-lexing-sequence
+                                :sequence chunk
+                                :row (lexer-row stream)
+                                :column (lexer-column stream)))
+                   (flush-buffer ()
+                     (flush-buffer stream)
+                     (scan chunk rules))
+                   (skip-characters (count)
+                     (setq chunk (subseq chunk count))
+                     (scan chunk rules)))))
+        (when (> (length double-buffer) 0)
+          (apply #'values (scan double-buffer (lexer-rules stream))))))))
