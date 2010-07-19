@@ -19,9 +19,21 @@
 (defpackage :graylex
   (:use :cl)
   (:export :buffered-input-stream
+           :buffered-stream
+           :buffered-input-size
+           :buffered-input-position
+           :buffered-input-buffer
            :fill-buffer
            :unmatched-lexing-sequence
+           :unmatched-sequence
+           :unmatched-sequence-row
+           :unmatched-sequence-column
            :lexer-input-stream
+           :lexer-rules
+           :lexer-row
+           :lexer-column
+           :lexer-non-stream-position
+           :lexer-double-buffer
            :lexer-unread-sequence
            :flush-buffer
            :stream-read-token))
