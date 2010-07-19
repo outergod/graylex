@@ -37,8 +37,8 @@ libraries including dso-lex:
 
 Links and References
 ====================
-Homepage:           http://www.cliki.net/graylex
-Hacking:            http://github.com/e-user/graylex
+Homepage: http://www.cliki.net/graylex
+Hacking:  http://github.com/e-user/graylex
 
 [1] http://en.wikipedia.org/wiki/Lexical_analysis
 [2] http://www.gnu.org/licenses/gpl-3.0-standalone.html
