@@ -18,4 +18,10 @@
 
 (defpackage :graylex
   (:use :cl)
-  (:export :all))
+  (:export :buffered-input-stream
+           :fill-buffer
+           :unmatched-lexing-sequence
+           :lexer-input-stream
+           :lexer-unread-sequence
+           :flush-buffer
+           :stream-read-token))

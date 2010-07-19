@@ -26,7 +26,7 @@
                 :version "0.0.1"
                 :author "Alexander Kahl <e-user@fsfe.org>"
                 :license "GPLv3+"
-                :depends-on (:cl-ppcre :trivial-gray-streams)
+                :depends-on (:cl-ppcre :trivial-gray-streams :alexandria)
                 :components
                 ((:module "src"
                           :serial t
