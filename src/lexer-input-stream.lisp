@@ -116,7 +116,18 @@ UNMATCHED-LEXING-SEQUENCE with further details and provide the following
 restarts:
 - flush-buffer: Call the method of the same name and try to scan again
 - skip-characters count: Skip COUNT characters of the reported sequence and try
-  to scan again"
+  to scan again
+
+Be sure to *not* use any of these unconditionally, you'll end up with an
+infinite loop! Instead, apply UNMATCHED-SEQUENCE to the condition in your
+handler to investigate and act accordingly; e.g. a hypothetical lexer rule could
+require at least five characters to match but the unmatched sequence has only
+three so reasonable handling code could look like this:
+> (handler-bind ((unmatched-lexing-sequence #'(lambda (condition)
+                                                (if (< (length (unmatched-sequence condition)) 5)
+                                                    (invoke-restart 'flush-buffer)
+                                                  (error condition)))))
+    (function-that-invokes-stream-read-token))"
     (declare (ignore peek))
     (with-accessors ((double-buffer lexer-double-buffer))
         stream
