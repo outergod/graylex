@@ -20,7 +20,7 @@ Please see file INSTALL.
 
 Usage
 =====
-Please see file m4-lexer.lisp in subdirectory examples for a self-explanatory
+Please see file examples/graylex-m4-example.lisp for a self-explanatory
 real-world example.
 
 
