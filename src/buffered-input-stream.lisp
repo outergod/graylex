@@ -67,8 +67,8 @@ position to zero."
       (setf (fill-pointer buffer) (read-sequence buffer (buffered-stream stream))
             (buffered-input-position stream) 0))))
 
-(defmethod trivial-gray-streams:stream-read-char :before ((stream buffered-input-stream))
-  "trivial-gray-streams:stream-read-char :before stream => position
+(defmethod stream-read-char :before ((stream buffered-input-stream))
+  "stream-read-char :before stream => position
 
 If reading beyond the internal buffer, replenish it."
   (with-accessors ((buffer buffered-input-buffer)
@@ -77,8 +77,8 @@ If reading beyond the internal buffer, replenish it."
     (when (>= position (fill-pointer buffer))
       (fill-buffer stream))))
 
-(defmethod trivial-gray-streams:stream-read-char ((stream buffered-input-stream))
-  "trivial-gray-streams:stream-read-char :before stream => char or :eof
+(defmethod stream-read-char ((stream buffered-input-stream))
+  "stream-read-char :before stream => char or :eof
 
 Return next character from wrapped input buffer or :EOF if the end of the input
 stream is reached."
@@ -90,14 +90,14 @@ stream is reached."
       (prog1 (char buffer position)
         (incf position)))))
 
-(defmethod trivial-gray-streams:stream-unread-char ((stream buffered-input-stream) char)
-  "trivial-gray-streams:stream-unread-char stream char => error
+(defmethod stream-unread-char ((stream buffered-input-stream) char)
+  "stream-unread-char stream char => error
 
 Unreading chars is not supported for BUFFERED-INPUT-STREAMS."
   (error "Unreading chars is not supported for buffered-input-streams"))
 
-(defmethod trivial-gray-streams:stream-read-sequence ((stream buffered-input-stream) seq start end &key)
-  "trivial-gray-streams:stream-read-sequence stream seq start end &key => position
+(defmethod stream-read-sequence ((stream buffered-input-stream) seq start end &key)
+  "stream-read-sequence stream seq start end &key => position
 
 Apply READ-SEQUENCE to given arguments and the wrapped input stream. All
 mechanisms of BUFFERED-INPUT-STREAM apply.
