@@ -24,6 +24,9 @@
            :buffered-input-position
            :buffered-input-buffer
            :fill-buffer
+           :flush-buffer
+           :stream-read-char
+           :stream-read-sequence
            :unmatched-lexing-sequence
            :unmatched-sequence
            :unmatched-sequence-row
@@ -35,5 +38,4 @@
            :lexer-non-stream-position
            :lexer-double-buffer
            :lexer-unread-sequence
-           :flush-buffer
            :stream-read-token))
