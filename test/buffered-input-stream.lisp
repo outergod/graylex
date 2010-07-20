@@ -19,3 +19,50 @@
 (in-suite all)
 (defsuite buffer)
 (in-suite buffer)
+
+(deftest flushing (stream expected-unread expected-buffer)
+  (is (string= expected-unread (flush-buffer stream)))
+  (is (string= expected-buffer (buffered-input-buffer stream))))
+
+(deftest reading (stream expected-char expected-position expected-buffer)
+  (is (string= (string expected-char) (stream-read-char stream)))
+  (is (= expected-position (buffered-input-position stream)))
+  (is (string= expected-buffer (buffered-input-buffer stream))))
+
+(deftest simple-flushing ()
+  (with-input-from-string (stream "abcdefghij")
+    (let ((buffered-stream (make-instance 'buffered-input-stream
+                                          :stream stream
+                                          :buffer-size 3)))
+      (flushing buffered-stream "abc" "def")
+      (flushing buffered-stream "def" "ghi")
+      (flushing buffered-stream "ghi" "j")
+      (flushing buffered-stream "j" ""))))
+
+(deftest simple-reading ()
+  (with-input-from-string (stream "abcdefghij")
+    (let ((buffered-stream (make-instance 'buffered-input-stream
+                                          :stream stream
+                                          :buffer-size 3)))
+      (reading buffered-stream #\a 1 "abc")
+      (reading buffered-stream #\b 2 "abc")
+      (reading buffered-stream #\c 3 "abc")
+      (reading buffered-stream #\d 1 "def")
+      (reading buffered-stream #\e 2 "def")
+      (reading buffered-stream #\f 3 "def")
+      (reading buffered-stream #\g 1 "ghi")
+      (reading buffered-stream #\h 2 "ghi")
+      (reading buffered-stream #\i 3 "ghi")
+      (reading buffered-stream #\j 1 "j")
+      (reading buffered-stream :eof 0 ""))))
+
+(deftest sequence-reading ()
+  (with-input-from-string (stream "hooray!")
+    (let ((buffered-stream (make-instance 'buffered-input-stream
+                                          :stream stream
+                                          :buffer-size 3))
+          (sequence (make-array 9 :element-type 'character :adjustable nil)))
+      (setf (char sequence 0) #\*
+            (char sequence 8) #\*)
+      (stream-read-sequence buffered-stream sequence 1 8)
+      (is (string= "*hooray!*" sequence)))))
