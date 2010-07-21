@@ -30,7 +30,8 @@
                      :documentation "Reading position of the wrapped buffer")
     (buffer :accessor buffered-input-buffer
             :documentation "Wrapped input buffer"))
-   (:documentation "Base class for buffered input streams."))
+   (:documentation "Base class for buffered input streams. The default buffer
+size is 1024 bytes."))
 
 (defmethod close ((stream buffered-input-stream) &key abort)
   (close (buffered-stream stream) :abort abort))
