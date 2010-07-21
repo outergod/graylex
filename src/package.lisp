@@ -17,7 +17,7 @@
 (in-package :graylex-system)
 
 (defpackage :graylex
-  (:use :cl)
+  (:use :cl :trivial-gray-streams)
   (:export :buffered-input-stream
            :buffered-stream
            :buffered-input-size
