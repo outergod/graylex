@@ -42,18 +42,21 @@ size is 1024 bytes."))
     "flush-buffer stream => string
 
 Return unread rest of the wrapped buffer and replenish it."
-    (prog1 (subseq (buffered-input-buffer stream) (buffered-input-position stream))
-      (fill-buffer stream))))
+    (with-accessors ((position buffered-input-position)
+                     (buffer buffered-input-buffer))
+        stream
+      (prog1 (subseq buffer position)
+        (fill-buffer stream)))))
 
 (defmethod initialize-instance :after ((stream buffered-input-stream) &rest initargs)
   "initialize-instance :after stream &rest initargs => position
 
 Create the input buffer after initialization and fill it for the first time."
   (declare (ignore initargs))
-  (with-accessors ((size buffered-input-size))
+  (with-accessors ((size buffered-input-size)
+                   (buffer buffered-input-buffer))
       stream
-    (setf (buffered-input-buffer stream)
-          (make-array size :element-type 'character :adjustable nil :fill-pointer size))
+    (setq buffer (make-array size :element-type 'character :adjustable nil :fill-pointer size))
     (fill-buffer stream)))
 
 (defgeneric fill-buffer (buffered-input-stream)
@@ -63,10 +66,11 @@ Create the input buffer after initialization and fill it for the first time."
 
 Fill the input buffer by reading from the wrapped stream. Also reset the reading
 position to zero."
-    (with-accessors ((buffer buffered-input-buffer))
+    (with-accessors ((position buffered-input-position)
+                     (buffer buffered-input-buffer))
         stream
       (setf (fill-pointer buffer) (read-sequence buffer (buffered-stream stream))
-            (buffered-input-position stream) 0))))
+            position 0))))
 
 (defmethod stream-read-char :before ((stream buffered-input-stream))
   "stream-read-char :before stream => position
@@ -76,7 +80,8 @@ If reading beyond the internal buffer, replenish it."
                    (position buffered-input-position))
       stream
     (when (>= position (fill-pointer buffer))
-      (fill-buffer stream))))
+      (flush-buffer stream)))) ; we use flush here because children would rather
+                               ; implement flush-buffer than fill-bufer
 
 (defmethod stream-read-char ((stream buffered-input-stream))
   "stream-read-char :before stream => char or :eof

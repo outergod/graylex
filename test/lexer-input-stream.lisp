@@ -19,3 +19,59 @@
 (in-suite all)
 (defsuite lexer)
 (in-suite lexer)
+
+(deftest lexer-flushing (stream expected-unread expected-buffer expected-double-buffer)
+  (is (string= expected-unread (flush-buffer stream)))
+  (is (string= expected-buffer (buffered-input-buffer stream)))
+  (is (string= expected-double-buffer (lexer-double-buffer stream))))
+
+(deftest lexer-reading (stream expected-char expected-position expected-buffer expected-double-buffer)
+  (is (string= (string expected-char) (stream-read-char stream)))
+  (is (= expected-position (buffered-input-position stream)))
+  (is (string= expected-buffer (buffered-input-buffer stream)))
+  (is (string= expected-double-buffer (lexer-double-buffer stream))))
+
+(deftest lexer-unreading (stream expected-position expected-double-buffer)
+  (is (= expected-position (lexer-non-stream-position stream)))
+  (is (string= expected-double-buffer (lexer-double-buffer stream))))
+
+
+(deftest lexer-simple-flushing ()
+  (with-input-from-string (stream "abcdefghij")
+    (let ((lexer-stream (make-instance 'lexer-input-stream
+                                       :stream stream
+                                       :buffer-size 3)))
+      (lexer-flushing lexer-stream "abc" "def" "abc")
+      (lexer-flushing lexer-stream "def" "ghi" "abcdef")
+      (lexer-flushing lexer-stream "ghi" "j" "abcdefghi")
+      (lexer-flushing lexer-stream "j" "" "abcdefghij")
+      (lexer-flushing lexer-stream "" "" "abcdefghij"))))
+
+(deftest lexer-simple-reading ()
+  (with-input-from-string (stream "abcdefghij")
+    (let ((lexer-stream (make-instance 'lexer-input-stream
+                                       :stream stream
+                                       :buffer-size 3)))
+      (lexer-reading lexer-stream #\a 1 "abc" "")
+      (lexer-reading lexer-stream #\b 2 "abc" "")
+      (lexer-reading lexer-stream #\c 3 "abc" "")
+      (lexer-reading lexer-stream #\d 1 "def" "abc")
+      (lexer-reading lexer-stream #\e 2 "def" "abc")
+      (lexer-reading lexer-stream #\f 3 "def" "abc")
+      (lexer-reading lexer-stream #\g 1 "ghi" "abcdef")
+      (lexer-reading lexer-stream #\h 2 "ghi" "abcdef")
+      (lexer-reading lexer-stream #\i 3 "ghi" "abcdef")
+      (lexer-reading lexer-stream #\j 1 "j" "abcdefghi")
+      (lexer-reading lexer-stream :eof 0 "" "abcdefghij")
+      (lexer-reading lexer-stream :eof 0 "" "abcdefghij"))))
+
+;; (deftest sequence-reading ()
+;;   (with-input-from-string (stream "hooray!")
+;;     (let ((buffered-stream (make-instance 'buffered-input-stream
+;;                                           :stream stream
+;;                                           :buffer-size 3))
+;;           (sequence (make-array 9 :element-type 'character :adjustable nil)))
+;;       (setf (char sequence 0) #\*
+;;             (char sequence 8) #\*)
+;;       (stream-read-sequence buffered-stream sequence 1 8)
+;;       (is (string= "*hooray!*" sequence)))))

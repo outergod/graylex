@@ -110,8 +110,11 @@ decrease the non-stream position or record the column and row progress."
   (:method ((stream lexer-input-stream) &optional (peek nil))
     "stream-read-token stream &optional peek => (class image)
 
-Scan the lexer's double buffer successively with all its rules. If the double
-buffer is empty, simply return NIL; is no rule matches, signal an
+Scan the lexer's double buffer successively with all its rules. Rules are
+expected to be conses of PCRE-compatible regular expressions and class name
+keywords. Heads-up: Every rule get prepended with an implicit \"^\" to match the
+beginning of the buffer!
+If the double buffer is empty, simply return NIL; is no rule matches, signal an
 UNMATCHED-LEXING-SEQUENCE with further details and provide the following
 restarts:
 - flush-buffer: Call the method of the same name and try to scan again
