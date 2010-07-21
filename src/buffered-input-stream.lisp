@@ -16,7 +16,7 @@
 
 (in-package :graylex)
 
-(defclass buffered-input-stream (trivial-gray-streams:fundamental-character-input-stream)
+(defclass buffered-input-stream (fundamental-character-input-stream trivial-gray-stream-mixin)
    ((stream :initarg :stream
             :reader buffered-stream
             :initform (alexandria:required-argument :stream)
