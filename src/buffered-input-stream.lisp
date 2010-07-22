@@ -80,11 +80,10 @@ If reading beyond the internal buffer, replenish it."
                    (position buffered-input-position))
       stream
     (when (>= position (fill-pointer buffer))
-      (flush-buffer stream)))) ; we use flush here because children would rather
-                               ; implement flush-buffer than fill-bufer
+      (fill-buffer stream))))
 
 (defmethod stream-read-char ((stream buffered-input-stream))
-  "stream-read-char :before stream => char or :eof
+  "stream-read-char stream => char or :eof
 
 Return next character from wrapped input buffer or :EOF if the end of the input
 stream is reached."
