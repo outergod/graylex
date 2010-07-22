@@ -31,5 +31,6 @@
                 ((:module "test"
                           :components
                           ((:file "package")
-                           (:file "buffered-input-stream" :depends-on ("package"))
-                           (:file "lexer-input-stream"    :depends-on ("package"))))))
+                           (:file "common"                :depends-on ("package"))
+                           (:file "buffered-input-stream" :depends-on ("package" "common"))
+                           (:file "lexer-input-stream"    :depends-on ("package" "common"))))))

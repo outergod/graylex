@@ -20,41 +20,11 @@
 (defsuite buffer)
 (in-suite buffer)
 
-(deftest buffer-flushing (stream expected-unread expected-buffer)
-  (is (string= expected-unread (flush-buffer stream)))
-  (is (string= expected-buffer (buffered-input-buffer stream))))
-
-(deftest buffer-reading (stream expected-char expected-position expected-buffer)
-  (is (string= (string expected-char) (stream-read-char stream)))
-  (is (= expected-position (buffered-input-position stream)))
-  (is (string= expected-buffer (buffered-input-buffer stream))))
-
 (deftest buffer-simple-flushing ()
-  (with-input-from-string (stream "abcdefghij")
-    (let ((buffered-stream (make-instance 'buffered-input-stream
-                                          :stream stream
-                                          :buffer-size 3)))
-      (buffer-flushing buffered-stream "abc" "def")
-      (buffer-flushing buffered-stream "def" "ghi")
-      (buffer-flushing buffered-stream "ghi" "j")
-      (buffer-flushing buffered-stream "j" ""))))
+  (simple-flushing 'buffered-input-stream))
 
 (deftest buffer-simple-reading ()
-  (with-input-from-string (stream "abcdefghij")
-    (let ((buffered-stream (make-instance 'buffered-input-stream
-                                          :stream stream
-                                          :buffer-size 3)))
-      (buffer-reading buffered-stream #\a 1 "abc")
-      (buffer-reading buffered-stream #\b 2 "abc")
-      (buffer-reading buffered-stream #\c 3 "abc")
-      (buffer-reading buffered-stream #\d 1 "def")
-      (buffer-reading buffered-stream #\e 2 "def")
-      (buffer-reading buffered-stream #\f 3 "def")
-      (buffer-reading buffered-stream #\g 1 "ghi")
-      (buffer-reading buffered-stream #\h 2 "ghi")
-      (buffer-reading buffered-stream #\i 3 "ghi")
-      (buffer-reading buffered-stream #\j 1 "j")
-      (buffer-reading buffered-stream :eof 0 ""))))
+  (simple-reading 'buffered-input-stream))
 
 (deftest buffer-sequence-reading ()
   (with-input-from-string (stream "hooray!")
