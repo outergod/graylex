@@ -73,6 +73,17 @@ buffer."
       (setq double-buffer (concatenate 'string double-buffer buffer-contents))
       buffer-contents)))
 
+(defmethod stream-read-char ((stream lexer-input-stream))
+  "stream-read-char stream => char or :eof
+
+Also save read characters into the double buffer."
+  (with-accessors ((double-buffer lexer-double-buffer))
+      stream
+    (let ((char (call-next-method)))
+      (prog1 char
+        (when (characterp char)
+          (setq double-buffer (format nil "~a~c" double-buffer char)))))))
+
 (defgeneric stream-read-token (lexer-input-stream &optional peek)
   (:documentation "Read lexical tokens from the input stream")
   (:method :before ((stream lexer-input-stream) &optional (peek nil))
