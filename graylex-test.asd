@@ -26,7 +26,7 @@
                 :version "0.0.1"
                 :author "Alexander Kahl <e-user@fsfe.org>"
                 :license "GPLv3+"
-                :depends-on (:graylex :stefil)
+                :depends-on (:graylex :stefil :cl-fad)
                 :components
                 ((:module "test"
                           :components

@@ -17,10 +17,15 @@
 (in-package :graylex-test)
 
 (defparameter *sequence-fixture* nil)
-(defixture sequence-fixture
-  (:setup (setq *sequence-fixture*
-                (list "abcdefghij"
-                      (format nil "This is~%a test")))))
+
+(let ((fixtures (mapcar #'(lambda (file)
+                            (with-open-file (stream file)
+                              (let ((string (make-string (file-length stream))))
+                                (read-sequence string stream)
+                                string)))
+                        (cl-fad:list-directory (asdf:system-relative-pathname (intern (package-name *package*)) "test/fixtures/")))))
+  (defixture sequence-fixture
+    (:setup (setq *sequence-fixture* fixtures))))
 
 (defmacro with-buffer-input-from-string ((var stream-class buffer-size string) &body body)
   (let ((stream (gensym)))
@@ -29,6 +34,10 @@
                                   :stream ,stream
                                   :buffer-size ,buffer-size)))
          ,@body))))
+
+(defun map-sequence-fixtures (function)
+  (with-fixture sequence-fixture
+    (mapc function *sequence-fixture*)))
 
 (defun safe-subseq (sequence start &optional (end (length sequence)))
   (let ((length (length sequence)))
@@ -50,43 +59,53 @@
     (is (string= expected-double-buffer (lexer-double-buffer stream)))))
 
 (deftest simple-flushing (buffer-class &optional test-double-buffer)
-  (with-fixture sequence-fixture
-    (mapc #'(lambda (string)
-              (dotimes (count 10)
-                (let ((buffer-length (1+ count)))
-                  (with-buffer-input-from-string (stream buffer-class count string)
-                    (let ((steps (ceiling (/ (length string) buffer-length))))
-                      (dotimes (step steps)
-                        (buffer-flushing stream
-                                         (safe-subseq string (* step count) (* (1+ step) count))
-                                         (safe-subseq string (* (1+ step) count) (* (+ 2 step) count))
-                                         (when test-double-buffer
-                                           (safe-subseq string 0 (* (1+ step) count))))))))))
-          *sequence-fixture*)))
+  (map-sequence-fixtures #'(lambda (string)
+                             (dotimes (count 10)
+                               (let ((buffer-length (1+ count)))
+                                 (with-buffer-input-from-string (stream buffer-class count string)
+                                   (let ((steps (ceiling (/ (length string) buffer-length))))
+                                     (dotimes (step steps)
+                                       (buffer-flushing stream
+                                                        (safe-subseq string (* step count) (* (1+ step) count))
+                                                        (safe-subseq string (* (1+ step) count) (* (+ 2 step) count))
+                                                        (when test-double-buffer
+                                                          (safe-subseq string 0 (* (1+ step) count))))))))))))
 
 (deftest simple-reading (buffer-class &optional test-double-buffer)
-  (with-fixture sequence-fixture
-    (mapc #'(lambda (string)
-              (dotimes (count 10)
-                (let ((length (length string))
-                      (buffer-length (1+ count)))
-                  (with-buffer-input-from-string (stream buffer-class buffer-length string)
-                    (do* ((step 0 (1+ step))
-                          (index 1 (if (>= step length)
-                                       0
-                                     (1+ (mod step buffer-length))))
-                          (char (schar string 0)
-                                (if (>= step length)
-                                    :eof
-                                  (schar string step)))
-                          (chunk 0 (floor step buffer-length)))
-                        ((= step (1+ length)))
-                      (buffer-reading stream char index
-                                      (if (>= step length)
-                                          ""
-                                        (safe-subseq string
-                                                     (* chunk buffer-length)
-                                                     (+ buffer-length (* chunk buffer-length))))
-                                        (when test-double-buffer
-                                           (safe-subseq string 0 (1+ step)))))))))
-          *sequence-fixture*)))
+  (map-sequence-fixtures #'(lambda (string)
+                             (dotimes (count 10)
+                               (let ((length (length string))
+                                     (buffer-length (1+ count)))
+                                 (with-buffer-input-from-string (stream buffer-class buffer-length string)
+                                   (do* ((step 0 (1+ step))
+                                         (index 1 (if (>= step length)
+                                                      0
+                                                    (1+ (mod step buffer-length))))
+                                         (char (schar string 0)
+                                               (if (>= step length)
+                                                   :eof
+                                                 (schar string step)))
+                                         (chunk 0 (floor step buffer-length)))
+                                       ((= step (1+ length)))
+                                     (buffer-reading stream char index
+                                                     (if (>= step length)
+                                                         ""
+                                                       (safe-subseq string
+                                                                    (* chunk buffer-length)
+                                                                    (+ buffer-length (* chunk buffer-length))))
+                                                     (when test-double-buffer
+                                                       (safe-subseq string 0 (1+ step)))))))))))
+
+(deftest simple-sequence-reading (buffer-class &optional test-double-buffer)
+  (map-sequence-fixtures #'(lambda (string)
+                             (dotimes (count 10)
+                               (let* ((string-length (length string))
+                                      (buffer-length (1+ count))
+                                      (sequence (make-array (+ 2 string-length) :element-type 'character :adjustable nil)))
+                                 (setf (char sequence 0) #\*
+                                       (char sequence (1+ string-length)) #\*)
+                                 (with-buffer-input-from-string (stream buffer-class buffer-length string)
+                                   (stream-read-sequence stream sequence 1 (1+ string-length))
+                                   (is (string= (format nil "*~a*" string) sequence))
+                                   (when test-double-buffer
+                                     (is (string= string (lexer-double-buffer stream))))))))))

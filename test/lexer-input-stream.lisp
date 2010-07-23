@@ -31,12 +31,4 @@
   (simple-reading 'lexer-input-stream t))
 
 (deftest lexer-sequence-reading ()
-  (with-input-from-string (stream "hooray!")
-    (let ((lexer-stream (make-instance 'lexer-input-stream
-                                       :stream stream
-                                       :buffer-size 3))
-          (sequence (make-array 9 :element-type 'character :adjustable nil)))
-      (setf (char sequence 0) #\*
-            (char sequence 8) #\*)
-      (stream-read-sequence lexer-stream sequence 1 8)
-      (is (string= "*hooray!*" sequence)))))
+  (simple-sequence-reading 'lexer-input-stream t))
