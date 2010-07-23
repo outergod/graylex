@@ -27,12 +27,4 @@
   (simple-reading 'buffered-input-stream))
 
 (deftest buffer-sequence-reading ()
-  (with-input-from-string (stream "hooray!")
-    (let ((buffered-stream (make-instance 'buffered-input-stream
-                                          :stream stream
-                                          :buffer-size 3))
-          (sequence (make-array 9 :element-type 'character :adjustable nil)))
-      (setf (char sequence 0) #\*
-            (char sequence 8) #\*)
-      (stream-read-sequence buffered-stream sequence 1 8)
-      (is (string= "*hooray!*" sequence)))))
+  (simple-sequence-reading 'buffered-input-stream))
