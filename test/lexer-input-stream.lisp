@@ -81,34 +81,41 @@
                                    (dotimes (step steps)
                                      (token-reading stream token-length :token))))))))
 
-; Not very lispy.. but reading streams isn't that lispy anyway
 (deftest lexer-mixed-un/reading ()
-  (with-buffer-input-from-string (stream 'lexer-input-stream 2 "aabbcc"
-                                         :rules (list (cons "\\|?.{2}" :token)))
+  (with-buffer-input-from-string (stream 'lexer-input-stream 2 (format nil "aabbcc~%dd")
+                                         :rules (list (cons "\\|.{2}" :token-reread)
+                                                      (cons "\\n\\n." :token-newline-reread)
+                                                      (cons ".{2}" :token-default)
+                                                      (cons "." :end)))
     (with-accessors ((column lexer-column)
                      (row lexer-row))
         stream
-      (is (zerop column))
-      (is (= 1 row))
-
-      (multiple-value-bind (class image)
-          (stream-read-token stream)
-        (is (eql :token class))
-        (is (string= "aa" image)))
-
-      (is (= 2 column))
-      (is (= 1 row))
-
-      (lexer-unread-sequence stream "|")
-      (sequence-unreading stream 1 "|bbcc")
-
-      (multiple-value-bind (class image)
-          (stream-read-token stream)
-        (is (eql :token class))
-        (is (string= "|bb" image)))
-
-      (sequence-unreading stream 0 "cc")
-      
-      (is (= 4 column))
-      (is (= 1 row)))))
-  
+      (mapc #'(lambda (args)
+                (destructuring-bind (action &rest arguments)
+                    args
+                  (cond ((eql :col action)
+                         (is (= (car arguments) column)))
+                        ((eql :row action)
+                         (is (= (car arguments) row)))
+                        ((eql :read action)
+                         (multiple-value-bind (class image)
+                             (stream-read-token stream)
+                           (is (eql (car arguments) class))
+                           (is (string= (cadr arguments) image))))
+                        ((eql :unread action)
+                         (lexer-unread-sequence stream (car arguments)))
+                        ((eql :check action)
+                         (sequence-unreading stream (car arguments) (cadr arguments))))))
+            (list '(:col 0) '(:row 1)
+                  '(:read :token-default "aa") '(:col 2) '(:row 1)
+                  '(:unread "|") `(:check 1 ,(format nil "|bbcc~%dd"))
+                  '(:read :token-reread "|bb") `(:check 0 ,(format nil "cc~%dd"))
+                  '(:unread "|..|") `(:check 4 ,(format nil "|..|cc~%dd"))
+                  '(:read :token-reread "|..") `(:check 1 ,(format nil "|cc~%dd"))
+                  '(:col 4) '(:row 1)
+                  '(:read :token-reread "|cc") '(:col 6) '(:row 1)
+                  `(:unread ,(string #\Newline)) `(:check 1 ,(format nil "~%~%dd"))
+                  `(:read :token-newline-reread ,(format nil "~%~%d"))
+                  '(:check 0 "d") '(:col 1) '(:row 2)
+                  '(:read :end "d")
+                  '(:col 2) '(:row 2))))))
