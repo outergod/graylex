@@ -76,7 +76,39 @@
                                (with-buffer-input-from-string (stream 'lexer-input-stream buffer-length string
                                                                       :rules (list (cons (format nil "(?:.|\\n){~d}" token-length)
                                                                                          :token)
-                                                                                   (cons "." :catchall)))
+                                                                                   (cons "(?:.|\\n)" :catchall)))
                                  (let ((steps (ceiling (/ (length string) token-length))))
                                    (dotimes (step steps)
                                      (token-reading stream token-length :token))))))))
+
+; Not very lispy.. but reading streams isn't that lispy anyway
+(deftest lexer-mixed-un/reading ()
+  (with-buffer-input-from-string (stream 'lexer-input-stream 2 "aabbcc"
+                                         :rules (list (cons "\\|?.{2}" :token)))
+    (with-accessors ((column lexer-column)
+                     (row lexer-row))
+        stream
+      (is (zerop column))
+      (is (= 1 row))
+
+      (multiple-value-bind (class image)
+          (stream-read-token stream)
+        (is (eql :token class))
+        (is (string= "aa" image)))
+
+      (is (= 2 column))
+      (is (= 1 row))
+
+      (lexer-unread-sequence stream "|")
+      (sequence-unreading stream 1 "|bbcc")
+
+      (multiple-value-bind (class image)
+          (stream-read-token stream)
+        (is (eql :token class))
+        (is (string= "|bb" image)))
+
+      (sequence-unreading stream 0 "cc")
+      
+      (is (= 4 column))
+      (is (= 1 row)))))
+  
