@@ -27,12 +27,13 @@
   (defixture sequence-fixture
     (:setup (setq *sequence-fixture* fixtures))))
 
-(defmacro with-buffer-input-from-string ((var stream-class buffer-size string) &body body)
+(defmacro with-buffer-input-from-string ((var stream-class buffer-size string &rest init-vars) &body body)
   (let ((stream (gensym)))
     `(with-input-from-string (,stream ,string)
        (let ((,var (make-instance ,stream-class
                                   :stream ,stream
-                                  :buffer-size ,buffer-size)))
+                                  :buffer-size ,buffer-size
+                                  ,@init-vars)))
          ,@body))))
 
 (defun map-sequence-fixtures (function)
