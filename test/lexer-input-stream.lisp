@@ -32,3 +32,10 @@
 
 (deftest lexer-sequence-reading ()
   (simple-sequence-reading 'lexer-input-stream t))
+
+(deftest lexer-sequence-unreading ()
+  (with-buffer-input-from-string (stream 'lexer-input-stream 3 "bar")
+    (lexer-unreading stream 0 "")
+    (lexer-unread-sequence stream "foo")
+    (lexer-unreading stream 3 "foo")
+    (buffer-flushing stream "bar" "" "foobar")))

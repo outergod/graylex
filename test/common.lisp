@@ -60,7 +60,7 @@
 
 (deftest simple-flushing (buffer-class &optional test-double-buffer)
   (map-sequence-fixtures #'(lambda (string)
-                             (dotimes (count 10)
+                             (dotimes (count 3)
                                (let ((buffer-length (1+ count)))
                                  (with-buffer-input-from-string (stream buffer-class count string)
                                    (let ((steps (ceiling (/ (length string) buffer-length))))
@@ -73,7 +73,7 @@
 
 (deftest simple-reading (buffer-class &optional test-double-buffer)
   (map-sequence-fixtures #'(lambda (string)
-                             (dotimes (count 10)
+                             (dotimes (count 3)
                                (let ((length (length string))
                                      (buffer-length (1+ count)))
                                  (with-buffer-input-from-string (stream buffer-class buffer-length string)
@@ -98,7 +98,7 @@
 
 (deftest simple-sequence-reading (buffer-class &optional test-double-buffer)
   (map-sequence-fixtures #'(lambda (string)
-                             (dotimes (count 10)
+                             (dotimes (count 3)
                                (let* ((string-length (length string))
                                       (buffer-length (1+ count))
                                       (sequence (make-array (+ 2 string-length) :element-type 'character :adjustable nil)))
