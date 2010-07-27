@@ -1,1 +1,84 @@
+2010-07-27  Alexander Kahl <e-user@fsfe.org>
 
+  * src/lexer-input-stream.lisp: improved performance by using flexible double
+  buffer strings
+
+2010-07-26  Alexander Kahl <e-user@fsfe.org>
+
+  * src/lexer-input-stream.lisp, test/lexer-input-stream.lisp: fixed lexer
+  col/row calculation finished decent lexing test
+
+  * src/lexer-input-stream.lisp, test/lexer-input-stream.lisp: test/code fixing
+  unreading
+
+  * test/common.lisp, test/lexer-input-stream.lisp: test for tokenization
+
+  * src/lexer-input-stream.lisp: added decent restart descriptions
+
+  * test/common.lisp, test/fixtures/chinese, test/fixtures/esperanto,
+  test/fixtures/latin, test/lexer-input-stream.lisp: cut down test runs by
+  using only three different buffer sizes and much shorter test fixtures
+  unreading test for lexers
+
+2010-07-23  Alexander Kahl <e-user@fsfe.org>
+
+  * graylex-test.asd, test/buffered-input-stream.lisp, test/common.lisp,
+  test/fixtures/chinese, test/fixtures/esperanto, test/fixtures/latin,
+  test/lexer-input-stream.lisp: refactoring three text fixtures (chinese,
+  esperanto and latin texts) > 1.1M assertions (maybe a bit too much)
+
+2010-07-22  Alexander Kahl <e-user@fsfe.org>
+
+  * graylex-test.asd, test/buffered-input-stream.lisp, test/common.lisp,
+  test/lexer-input-stream.lisp: testing done right!
+
+  * src/buffered-input-stream.lisp, src/lexer-input-stream.lisp,
+  test/lexer-input-stream.lisp: properly handle reading chars in lexer streams
+
+2010-07-21  Alexander Kahl <e-user@fsfe.org>
+
+  * src/buffered-input-stream.lisp, src/lexer-input-stream.lisp,
+  test/buffered-input-stream.lisp, test/lexer-input-stream.lisp: more docs,
+  more tests, bla
+
+  * src/buffered-input-stream.lisp: added default buffer size to documentation
+
+  * src/buffered-input-stream.lisp, src/package.lisp: :use trivial-gray-streams
+  and inherit from gray mixin
+
+2010-07-20  Alexander Kahl <e-user@fsfe.org>
+
+  * test/buffered-input-stream.lisp: some tests, finally
+
+  * src/buffered-input-stream.lisp: define stream methods in own namespace
+
+  * src/package.lisp: define stream methods in own namespace
+
+  * README: fixed filepath
+
+  * graylex-test.asd, test/buffered-input-stream.lisp,
+  test/lexer-input-stream.lisp, test/package.lisp: added testing stubs
+
+  * src/lexer-input-stream.lisp: more documentation
+
+2010-07-19  Alexander Kahl <e-user@fsfe.org>
+
+  * src/lexer-input-stream.lisp: provide restarts for unmatched lexer sequences
+
+2010-07-19  Alexander Kahl <akahl@imttechnologies.com>
+
+  * CREDITS: added CREDITS
+
+  * INSTALL, README: added missing dep alexandria whitespace fix in readme
+
+  * src/package.lisp: more missing exports
+
+  * examples/graylex-m4-example.lisp, examples/m4-lexer.lisp,
+  examples/package.lisp, graylex-m4-example.asd: finished example
+
+  * graylex.asd, src/package.lisp: fixed export added missing dep alexandria
+
+2010-07-18  Alexander Kahl <e-user@fsfe.org>
+
+  * ChangeLog, src/buffered-input-stream.lisp, src/lexer-input-stream.lisp:
+  breakpoint cleaning up and documenting
