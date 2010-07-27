@@ -43,11 +43,20 @@
                         :initform 0
                         :documentation "Position in unread sequence")
    (double-buffer :accessor lexer-double-buffer
-                  :initform ""
                   :documentation "Double buffer"))
   (:documentation "Lexer input streams provide lexical analysis, tracking of
 input row and column and a dynamic second buffer for input tokens longer than
 the primary BUFFERED-INPUT-STREAM buffer size."))
+
+(defmethod initialize-instance :after ((stream lexer-input-stream) &rest initargs)
+  "initialize-instance :after stream &rest initargs => position
+
+Create the double buffer after initialization."
+  (declare (ignore initargs))
+  (with-accessors ((size buffered-input-size)
+                   (buffer lexer-double-buffer))
+      stream
+    (setq buffer (make-array size :element-type 'character :adjustable t :fill-pointer 0))))
 
 (defgeneric lexer-unread-sequence (lexer-input-stream seq)
   (:documentation "Unread a sequence by feeding it into the double buffer")
@@ -59,7 +68,9 @@ position."
     (with-accessors ((double-buffer lexer-double-buffer)
                      (position lexer-non-stream-position))
         stream
-      (setq double-buffer (concatenate 'string seq double-buffer))
+      (setq double-buffer (make-array (+ (length seq) (length double-buffer))
+                                      :element-type 'character :adjustable t :fill-pointer t
+                                      :initial-contents (concatenate 'string seq double-buffer)))
       (incf position (length seq)))))
 
 (defmethod flush-buffer ((stream lexer-input-stream))
@@ -70,8 +81,10 @@ buffer."
   (with-accessors ((double-buffer lexer-double-buffer))
       stream
     (let ((buffer-contents (call-next-method)))
-      (setq double-buffer (concatenate 'string double-buffer buffer-contents))
-      buffer-contents)))
+      (prog1 buffer-contents
+        (mapc #'(lambda (char)
+                  (vector-push-extend char double-buffer))
+              (coerce buffer-contents 'list))))))
 
 (defmethod stream-read-char ((stream lexer-input-stream))
   "stream-read-char stream => char or :eof
@@ -82,7 +95,7 @@ Also save read characters into the double buffer."
     (let ((char (call-next-method)))
       (prog1 char
         (when (characterp char)
-          (setq double-buffer (format nil "~a~c" double-buffer char)))))))
+          (vector-push-extend char double-buffer))))))
 
 (defgeneric stream-read-token (lexer-input-stream &optional peek)
   (:documentation "Read lexical tokens from the input stream")
@@ -110,7 +123,8 @@ decrease the non-stream position or record the column and row progress."
         (multiple-value-prog1 (values class image)
           (when (and class (null peek))
             (let ((length (length image)))
-              (setq double-buffer (subseq double-buffer length))
+              (setq double-buffer (replace double-buffer double-buffer :start2 length))
+              (decf (fill-pointer double-buffer) length)
               (if (>= position length)
                   (decf position length)
                 (let* ((delta-image (subseq image position))
@@ -171,5 +185,5 @@ three so reasonable handling code could look like this:
                                (format stream "Skip COUNT characters and try again"))
                      (setq chunk (subseq chunk count))
                      (scan chunk rules)))))
-        (when (> (length double-buffer) 0)
+        (when (> (fill-pointer double-buffer) 0)
           (apply #'values (scan double-buffer (lexer-rules stream))))))))
