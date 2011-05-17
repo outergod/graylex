@@ -1,5 +1,5 @@
 ;;;; graylex - graylex-test.asd
-;;;; Copyright (C) 2010  Alexander Kahl <e-user@fsfe.org>
+;;;; Copyright (C) 2010 2011  Alexander Kahl <e-user@fsfe.org>
 ;;;; This file is part of graylex.
 ;;;; graylex is free software; you can redistribute it and/or modify
 ;;;; it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@
                 :version "0.0.1"
                 :author "Alexander Kahl <e-user@fsfe.org>"
                 :license "GPLv3+"
-                :depends-on (:graylex :stefil :cl-fad)
+                :depends-on (:graylex :hu.dwim.stefil :cl-fad)
                 :components
                 ((:module "test"
                           :components
