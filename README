@@ -4,51 +4,52 @@ graylex offers a means to do string operations on input streams without slurping
 all input at once by using Common Lisp Gray Streams, fixed-sized and flexible
 buffers.
 
-This is especially interesting for lexical analysis ("lexing") [1] where input
+This is especially interesting for lexical analysis ("lexing") [lex] where input
 files can be exuberant, e.g. SQL dumps weighing hundreds of Megabytes.
 
 graylex is completely written in Common Lisp and licensed under the
-GPLv3+[2]. Please see the file COPYING in the top-level directory of the
+GPLv3+ [gpl]. Please see the file COPYING in the top-level directory of the
 distribution tarball or see the link at [2] if you didn't receive a copy along
 with this file.
 
 
 Installation
-============
+------------
 Please see file INSTALL.
 
 
 Usage
-=====
+-----
 Please see file examples/graylex-m4-example.lisp for a self-explanatory
 real-world example.
 
 
 History
-=======
-graylex is inspired by dso-lex [3] but tackles two shortcomings of other lexing
-libraries including dso-lex:
+-------
+graylex is inspired by dso-lex [dso-lex] but tackles two shortcomings of other
+lexing libraries including dso-lex:
 - Lexing and parsing should be performed on streams (i.e. string chunks of a
   stream) which can be a tedious task to implement manually
-- There are languages where the grammar [4] is volatile and the set of terminals
-  [5] changes during immediate evaluation, hence eval'ing dynamically scoped
-  variables is necessary (e.g. M4)
+- There are languages where the grammar [grammar] is volatile and the set of
+  terminals [term] changes during immediate evaluation, hence eval'ing
+  dynamically scoped variables is necessary (e.g. M4)
 
 
 Links and References
-====================
+--------------------
 Homepage: http://www.cliki.net/graylex
 Hacking:  http://github.com/e-user/graylex
 
-[1] http://en.wikipedia.org/wiki/Lexical_analysis
-[2] http://www.gnu.org/licenses/gpl-3.0-standalone.html
-[3] http://trac.fugue88.ws/lex
-[4] http://en.wikipedia.org/wiki/Formal_grammar
-[5] http://en.wikipedia.org/wiki/Terminal_and_nonterminal_symbols#Terminal_symbols
+[lex]: http://en.wikipedia.org/wiki/Lexical_analysis
+[gpl]: http://www.gnu.org/licenses/gpl-3.0-standalone.html
+[dso-lex]: http://trac.fugue88.ws/lex
+[grammar]: http://en.wikipedia.org/wiki/Formal_grammar
+[term]: http://en.wikipedia.org/wiki/Terminal_and_nonterminal_symbols#Terminal_symbols
 
 
---------------------------------------------------------------------------------
-Copyright (C) 2010  Alexander Kahl <e-user@fsfe.org>
+Copyright
+---------
+Copyright (C) 2010 2011  Alexander Kahl <e-user@fsfe.org>
 This file is part of graylex.
 graylex is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
