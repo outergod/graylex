@@ -1,5 +1,5 @@
 ;;;; graylex - package.lisp
-;;;; Copyright (C) 2010  Alexander Kahl <e-user@fsfe.org>
+;;;; Copyright (C) 2010 2011  Alexander Kahl <e-user@fsfe.org>
 ;;;; This file is part of graylex.
 ;;;; graylex is free software; you can redistribute it and/or modify
 ;;;; it under the terms of the GNU General Public License as published by
@@ -17,10 +17,10 @@
 (in-package :graylex-test-system)
 
 (defpackage :graylex-test
-  (:use :cl :graylex :stefil)
+  (:use :cl :graylex :hu.dwim.stefil)
   (:export :all))
 
 (in-package :graylex-test)
 
-(in-root-suite)
+(in-suite root-suite)
 (defsuite all)

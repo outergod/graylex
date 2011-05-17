@@ -1,5 +1,5 @@
 ;;;; graylex - common.lisp
-;;;; Copyright (C) 2010  Alexander Kahl <e-user@fsfe.org>
+;;;; Copyright (C) 2010 2011  Alexander Kahl <e-user@fsfe.org>
 ;;;; This file is part of graylex.
 ;;;; graylex is free software; you can redistribute it and/or modify
 ;;;; it under the terms of the GNU General Public License as published by
@@ -25,7 +25,8 @@
                                 string)))
                         (cl-fad:list-directory (asdf:system-relative-pathname (intern (package-name *package*)) "test/fixtures/")))))
   (defixture sequence-fixture
-    (:setup (setq *sequence-fixture* fixtures))))
+      (setq *sequence-fixture* fixtures)
+    (-body-)))
 
 (defmacro with-buffer-input-from-string ((var stream-class buffer-size string &rest init-vars) &body body)
   (let ((stream (gensym)))
