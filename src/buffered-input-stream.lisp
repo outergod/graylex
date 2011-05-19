@@ -29,7 +29,10 @@
                      :initform 0
                      :documentation "Reading position of the wrapped buffer")
     (buffer :accessor buffered-input-buffer
-            :documentation "Wrapped input buffer"))
+            :documentation "Wrapped input buffer")
+    (eof-reached :accessor buffered-eof-p
+                 :initform nil
+                 :documentation "Whether EOF in stream has been reached"))
    (:documentation "Base class for buffered input streams. The default buffer
 size is 1024 bytes."))
 
@@ -51,12 +54,15 @@ Return unread rest of the wrapped buffer and replenish it."
 (defmethod initialize-instance :after ((stream buffered-input-stream) &rest initargs)
   "initialize-instance :after stream &rest initargs => position
 
-Create the input buffer after initialization and fill it for the first time."
+Create the input buffer after initialization and fill it for the first time.
+Also, (re)set EOF-REACHED to NIL."
   (declare (ignore initargs))
   (with-accessors ((size buffered-input-size)
-                   (buffer buffered-input-buffer))
+                   (buffer buffered-input-buffer)
+                   (eof buffered-eof-p))
       stream
-    (setq buffer (make-array size :element-type 'character :adjustable nil :fill-pointer size))
+    (setq buffer (make-array size :element-type 'character :adjustable nil :fill-pointer size)
+          eof nil)
     (fill-buffer stream)))
 
 (defgeneric fill-buffer (buffered-input-stream)
@@ -67,10 +73,14 @@ Create the input buffer after initialization and fill it for the first time."
 Fill the input buffer by reading from the wrapped stream. Also reset the reading
 position to zero."
     (with-accessors ((position buffered-input-position)
-                     (buffer buffered-input-buffer))
+                     (buffer buffered-input-buffer)
+                     (eof buffered-eof-p))
         stream
-      (setf (fill-pointer buffer) (read-sequence buffer (buffered-stream stream))
-            position 0))))
+      (prog1
+          (setf (fill-pointer buffer) (read-sequence buffer (buffered-stream stream))
+                position 0)
+        (when (= 0 (fill-pointer buffer))
+          (setq eof t))))))
 
 (defmethod stream-read-char :before ((stream buffered-input-stream))
   "stream-read-char :before stream => position
@@ -92,8 +102,8 @@ stream is reached."
       stream
     (if (= 0 (fill-pointer buffer))
         :eof
-      (prog1 (char buffer position)
-        (incf position)))))
+        (prog1 (char buffer position)
+          (incf position)))))
 
 (defmethod stream-unread-char ((stream buffered-input-stream) char)
   "stream-unread-char stream char => error
