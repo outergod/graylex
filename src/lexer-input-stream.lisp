@@ -1,5 +1,5 @@
 ;;;; graylex - lexer-input-stream.lisp
-;;;; Copyright (C) 2010  Alexander Kahl <e-user@fsfe.org>
+;;;; Copyright (C) 2010 2011  Alexander Kahl <e-user@fsfe.org>
 ;;;; This file is part of graylex.
 ;;;; graylex is free software; you can redistribute it and/or modify
 ;;;; it under the terms of the GNU General Public License as published by
@@ -27,6 +27,21 @@
              :reader  unmatched-sequence-column
              :documentation "Column part of unmatching position"))
   (:documentation "Condition signaling that no lexer rule matches."))
+
+(define-condition lexing-buffer-eof (error) ()
+  (:documentation "Signal that a regex tries to scan beyond the internal buffer."))
+
+(defun eof-watchdog-filter (string stream)
+  "eof-watchdog-filter string stream => lambda position => position
+
+To be used as a CL-PPCRE filter; evaluates to function that
+takes one argument POSITION and signals LEXING-BUFFER-EOF if end of STRING to
+scan is reached and no more input is to come from STREAM."
+  #'(lambda (position)
+      (if (and (= (length string) position)
+               (not (buffered-eof-p stream)))
+          (signal 'lexing-buffer-eof)
+          position)))
 
 (defclass lexer-input-stream (buffered-input-stream)
   ((rules :initarg :rules
@@ -100,48 +115,49 @@ Also save read characters into the double buffer."
 (defgeneric stream-read-token (lexer-input-stream &optional peek)
   (:documentation "Read lexical tokens from the input stream")
   (:method :before ((stream lexer-input-stream) &optional (peek nil))
-    "stream-read-token :before stream &optional peek => string
+           "stream-read-token :before stream &optional peek => string
 
 If the internal double buffer is empty, flush the main buffer first in order to
 replenish it."
-    (declare (ignore peek))
-    (when (= 0 (length (lexer-double-buffer stream)))
-      (flush-buffer stream)))
+           (declare (ignore peek))
+           (when (= 0 (length (lexer-double-buffer stream)))
+             (flush-buffer stream)))
   (:method :around ((stream lexer-input-stream) &optional (peek nil))
-    "stream-read-token :around stream &optional peek => (class image)
+           "stream-read-token :around stream &optional peek => (class image)
 
 Scan the result from calling the next method if PEEK is NIL:
 Discard the matched part from the beginning of the double buffer and either just
 decrease the non-stream position or record the column and row progress."
-    (with-accessors ((double-buffer lexer-double-buffer)
-                     (position lexer-non-stream-position)
-                     (row lexer-row)
-                     (column lexer-column))
-        stream
-      (multiple-value-bind (class image)
-          (call-next-method)
-        (multiple-value-prog1 (values class image)
-          (when (and class (null peek))
-            (let ((length (length image)))
-              (setq double-buffer (replace double-buffer double-buffer :start2 length))
-              (decf (fill-pointer double-buffer) length)
-              (if (>= position length)
-                  (decf position length)
-                (let* ((delta-image (subseq image position))
-                       (newlines (count (string #\Newline) delta-image :test #'string=)))
-                  (setq position 0)
-                  (if (> newlines 0)
-                      (progn
-                        (setq column (search (string #\Newline) (reverse delta-image)))
-                        (incf row newlines))
-                    (incf column (length delta-image)))))))))))
+           (with-accessors ((double-buffer lexer-double-buffer)
+                            (position lexer-non-stream-position)
+                            (row lexer-row)
+                            (column lexer-column))
+               stream
+             (multiple-value-bind (class image)
+                 (call-next-method)
+               (multiple-value-prog1 (values class image)
+                 (when (and class (null peek))
+                   (let ((length (length image)))
+                     (setq double-buffer (replace double-buffer double-buffer :start2 length))
+                     (decf (fill-pointer double-buffer) length)
+                     (if (>= position length)
+                         (decf position length)
+                         (let* ((delta-image (subseq image position))
+                                (newlines (count (string #\Newline) delta-image :test #'string=)))
+                           (setq position 0)
+                           (if (> newlines 0)
+                               (progn
+                                 (setq column (search (string #\Newline) (reverse delta-image)))
+                                 (incf row newlines))
+                               (incf column (length delta-image)))))))))))
   (:method ((stream lexer-input-stream) &optional (peek nil))
     "stream-read-token stream &optional peek => (class image)
 
 Scan the lexer's double buffer successively with all its rules. Rules are
 expected to be conses of PCRE-compatible regular expressions and class name
-keywords. Heads-up: Every rule get prepended with an implicit \"^\" to match the
-beginning of the buffer!
+keywords. Heads-up: Every rule get prepended with an implicit start 
+anchor (\"^\") to match the beginning of the buffer!
+
 If the double buffer is empty, simply return NIL; is no rule matches, signal an
 UNMATCHED-LEXING-SEQUENCE with further details and provide the following
 restarts:
@@ -163,27 +179,32 @@ three so reasonable handling code could look like this:
     (with-accessors ((double-buffer lexer-double-buffer))
         stream
       (labels ((scan (chunk rules)
-                 (restart-case
-                     (or (some #'(lambda (pair)
-                                   (let ((match (cl-ppcre:scan-to-strings (concatenate 'string "^" (eval (car pair))) double-buffer)))
-                                     (when (and match (> (length match) 0)) ; zero-length matches are not allowed
-                                       (if (= (length match) (length chunk))
-                                           (scan (flush-buffer stream) (list pair))
-                                         (list (cdr pair) match)))))
-                               rules)
-                         (error 'unmatched-lexing-sequence
-                                :sequence chunk
-                                :row (lexer-row stream)
-                                :column (lexer-column stream)))
-                   (flush-buffer ()
-                     :report (lambda (stream)
-                               (format stream "Flush the buffer and try again"))
-                     (flush-buffer stream)
-                     (scan chunk rules))
-                   (skip-characters (count)
-                     :report (lambda (stream)
-                               (format stream "Skip COUNT characters and try again"))
-                     (setq chunk (subseq chunk count))
-                     (scan chunk rules)))))
+                 (handler-bind ((lexing-buffer-eof #'(lambda (condition)
+                                                       (declare (ignore condition))
+                                                       (invoke-restart 'flush-buffer))))
+                   (restart-case
+                       (or (some #'(lambda (pair)
+                                     (let ((match (cl-ppcre:scan-to-strings
+                                                   (list :sequence :start-anchor
+                                                         (list :regex (eval (car pair)))
+                                                         (list :filter (eof-watchdog-filter chunk stream) 0))
+                                                   chunk)))
+                                       (when (and match (> (length match) 0)) ; zero-length matches are not allowed
+                                         (list (cdr pair) match))))
+                                 rules)
+                           (error 'unmatched-lexing-sequence
+                                  :sequence chunk
+                                  :row (lexer-row stream)
+                                  :column (lexer-column stream)))
+                     (flush-buffer ()
+                       :report (lambda (stream)
+                                 (format stream "Flush the buffer and try again"))
+                       (flush-buffer stream)
+                       (scan double-buffer rules))
+                     (skip-characters (count)
+                       :report (lambda (stream)
+                                 (format stream "Skip COUNT characters and try again"))
+                       (setq chunk (subseq chunk count))
+                       (scan chunk rules))))))
         (when (> (fill-pointer double-buffer) 0)
           (apply #'values (scan double-buffer (lexer-rules stream))))))))

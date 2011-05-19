@@ -33,4 +33,5 @@
                           ((:file "package")
                            (:file "common"                :depends-on ("package"))
                            (:file "buffered-input-stream" :depends-on ("package" "common"))
-                           (:file "lexer-input-stream"    :depends-on ("package" "common"))))))
+                           (:file "lexer-input-stream"    :depends-on ("package" "common"))
+                           (:file "bugs"                  :depends-on ("lexer-input-stream" "package" "common"))))))
